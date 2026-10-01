@@ -1,0 +1,141 @@
+import { useState } from "react";
+import { toast } from "react-toastify";
+
+const API_URL = import.meta.env.VITE_API_URL;
+
+const LoginForm = ({ onSwitchToRegister, onLoginSuccess }) => {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+
+    if (!email.trim() || !password) {
+      setError("Please enter your email and password.");
+      return;
+    }
+
+    setError("");
+    setIsLoading(true);
+
+    try {
+      const response = await fetch(`${API_URL}/auth/login`, { credentials: "include",
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.message || "Unable to sign in.");
+        return;
+      }
+
+      if (data.token) {
+        localStorage.setItem("worknestToken", data.token);
+      }
+      localStorage.setItem("worknestUser", JSON.stringify(data.user));
+      localStorage.setItem("worknestWorkspaces", JSON.stringify(data.workspaces || []));
+
+      toast.success(data.message);
+      onLoginSuccess(data.user, data.workspaces, data.token);
+    } catch {
+      setError("Unable to connect to the server.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = () => {
+    window.location.href = `${API_URL}/auth/google`;
+  };
+
+  return (
+    <form
+      className="mt-2 grid gap-3"
+      onSubmit={handleSubmit}
+      noValidate
+    >
+      <label className="text-[14px] font-bold uppercase tracking-[0.12em] text-[#52656A] dark:text-[#A5C9CA]">
+        Email address</label>
+       
+          <input
+            type="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            placeholder="you@example.com"
+            className="h-11 w-full rounded-xl border border-[#D5E1E0] dark:border-[#395B64] bg-[#F8FAFB] dark:bg-[#2C3333] p-3 font-normal tracking-normal text-[#2C3333] dark:text-[#E7F6F2] outline-none transition placeholder:text-[#8A999B] dark:placeholder:text-[#A5C9CA]/50 hover:border-[#A5C9CA] focus:border-[#395B64]"
+          />
+       
+      
+      <label className=" text-[14px] font-bold uppercase tracking-[0.12em] text-[#52656A] dark:text-[#A5C9CA]">
+        Password  
+      </label>
+          <input
+            type="password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            placeholder="Enter your password"
+            className="h-11 w-full rounded-xl border border-[#D5E1E0] dark:border-[#395B64] bg-[#F8FAFB] dark:bg-[#2C3333] p-3 text-lg font-normal tracking-normal text-[#2C3333] dark:text-[#E7F6F2] outline-none transition placeholder:text-[#8A999B] dark:placeholder:text-[#A5C9CA]/50 hover:border-[#A5C9CA] focus:border-[#395B64]"
+          />
+
+
+      {error && (
+        <p role="alert" className="flex items-start gap-2 rounded-xl border border-[#E8CACA] dark:border-rose-900/50 bg-[#FFF7F7] dark:bg-rose-950/30 px-3 py-2.5 text-xs leading-5 text-[#9B4D4D] dark:text-rose-300">
+          <i className="fa-solid fa-circle-exclamation mt-0.5" aria-hidden="true" />
+          {error}
+        </p>
+      )}
+      <p className="mb-3 text-right text-sm text-[#364042] dark:text-[#A5C9CA]">
+       <a href="/forgot-password" className="underline underline-offset-4">
+          Forgot Password?
+        </a>
+      </p>
+
+      <button
+        type="submit"
+        disabled={isLoading}
+        className="flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#395B64] px-6 text-sm font-bold text-white shadow-[0_10px_20px_rgba(57,91,100,0.18)] transition hover:bg-[#2C3333] dark:hover:bg-[#4E717B] hover:shadow-[0_12px_24px_rgba(44,51,51,0.2)] disabled:cursor-not-allowed disabled:opacity-70"
+      >
+        {isLoading ? "Signing in..." : "Sign in"}
+        {!isLoading && <i className="fa-solid fa-arrow-right text-xs" aria-hidden="true" />}
+      </button>
+
+  
+
+      <p className="border-t border-[#E6EEED] dark:border-[#2C3333] pt-3 text-center text-sm text-[#52656A] dark:text-[#A5C9CA]">
+        Don't have an account?{" "}
+        <button
+          type="button"
+          className="cursor-pointer font-semibold text-[#395B64] dark:text-white underline underline-offset-4"
+          onClick={onSwitchToRegister}
+        >
+          Create one
+        </button>
+      </p>
+      <button
+        type="button"
+        className="flex h-12 w-full cursor-pointer items-center justify-center gap-3 rounded-xl border border-[#dadce0] dark:border-[#8e918f] bg-white dark:bg-[#131314] px-6 text-[14px] font-medium text-[#3c4043] dark:text-[#e3e3e3] transition hover:bg-[#f8f9fa] dark:hover:bg-[#1e1e1e]"
+        onClick={handleGoogleLogin}
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className="h-[18px] w-[18px]">
+          <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+          <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+          <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+          <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+        </svg>
+        Continue with Google
+      </button>
+    </form>
+  );
+};
+
+export default LoginForm;

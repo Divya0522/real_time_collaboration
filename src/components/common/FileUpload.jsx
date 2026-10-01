@@ -1,0 +1,82 @@
+import { useState, useRef } from "react";
+import { uploadFile } from "../../services/uploadService";
+
+const FileUpload = ({
+  onUploadSuccess,
+  onUploadError,
+  buttonClassName,
+  iconClassName,
+  disabled = false,
+  title = "Upload file",
+}) => {
+  const [isUploading, setIsUploading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const fileInputRef = useRef(null);
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setSelectedFile(file);
+    setIsUploading(true);
+
+    try {
+      const data = await uploadFile(file);
+      if (onUploadSuccess) {
+        onUploadSuccess(data.file);
+      }
+      setSelectedFile(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    } catch (error) {
+      if (onUploadError) {
+        onUploadError(error.message);
+      }
+      setSelectedFile(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleButtonClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  return (
+    <div className="relative inline-block">
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        className="hidden"
+        disabled={disabled || isUploading}
+      />
+      <button
+        type="button"
+        onClick={handleButtonClick}
+        disabled={disabled || isUploading}
+        title={title}
+        className={
+          buttonClassName ||
+          "flex items-center justify-center h-8 w-8 rounded-md text-[#52656A] hover:text-[#395B64] hover:bg-[#E7F6F2] transition-colors disabled:opacity-50"
+        }
+      >
+        {isUploading ? (
+          <i className="fa-solid fa-spinner fa-spin text-sm" />
+        ) : (
+          <i className={`fa-solid fa-paperclip ${iconClassName || "text-sm"}`} />
+        )}
+      </button>
+    </div>
+  );
+};
+
+
+
+export default FileUpload;
